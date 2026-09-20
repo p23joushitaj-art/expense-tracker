@@ -66,9 +66,12 @@ function initFirebase() {
 
 function subscribeExpenses() {
   if (unsubscribe) unsubscribe();
+  // Order by creation time only (newest entered first). A single-field
+  // orderBy needs no composite index. Daily/monthly totals and the category
+  // breakdown are computed in-app from each expense's `date`, so query order
+  // doesn't affect them.
   const q = query(
     collection(db, "users", uid, "expenses"),
-    orderBy("date", "desc"),
     orderBy("createdAt", "desc")
   );
   unsubscribe = onSnapshot(q, (snap) => {
