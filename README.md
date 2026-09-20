@@ -49,6 +49,11 @@ The email + password is only needed the first time on each new device.
 - **Running balance** headline — how much money is left, as of today
 - **Month navigator** (‹ ›) to view any past month's balance sheet
 - Transactions list for the month, with delete
+- **Bottom tab bar** with three views:
+  - **Balance** — the monthly balance sheet (above)
+  - **Expenses dashboard** — totals broken down by **category** and **payment
+    mode**, switchable between **Month** and **Year** (year view adds a per-month chart)
+  - **Income dashboard** — totals broken down by **source**, Month/Year switch
 - **Email + password login** — same account syncs across all her devices
 - Password reset by email
 - 4-digit PIN lock for quick daily unlocking on each device
