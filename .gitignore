@@ -1,3 +1,6 @@
 .DS_Store
 node_modules/
 *.log
+firebase-debug.log
+.fb-project-id
+.fb-sdkconfig.txt
