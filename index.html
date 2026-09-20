@@ -92,6 +92,11 @@
           </div>
         </section>
 
+        <label class="cc-toggle" for="includeCredit">
+          <span>Include credit-card spending in balance</span>
+          <span class="switch"><input type="checkbox" id="includeCredit"><span class="slider"></span></span>
+        </label>
+
         <section class="card">
           <div class="card-head"><h2>Balance sheet</h2></div>
           <div class="ledger">
@@ -103,6 +108,9 @@
             <div id="incomeBreakdown" class="subrows"></div>
             <div class="sr head expense"><span>－ Expenses</span><span id="expenseTotal">−₹0</span></div>
             <div id="breakdown" class="subrows"></div>
+            <div class="sr memo hidden" id="creditMemo">
+              <span>💳 <span id="creditMemoLabel"></span></span><span id="creditMemoAmt"></span>
+            </div>
             <div class="sr total"><span>Remaining balance</span><span id="remainingRow">₹0</span></div>
           </div>
         </section>
@@ -222,6 +230,6 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=6"></script>
+  <script type="module" src="app.js?v=7"></script>
 </body>
 </html>

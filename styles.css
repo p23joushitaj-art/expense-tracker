@@ -245,6 +245,30 @@ form input:focus { outline: 2px solid var(--primary); background: #fff; }
 }
 .type-toggle button.active { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
 
+/* Include-credit-card toggle */
+.cc-toggle {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 12px 18px 0; padding: 12px 16px;
+  background: var(--card); border-radius: 14px; box-shadow: var(--shadow);
+  font-size: 14px; cursor: pointer;
+}
+.switch { position: relative; width: 46px; height: 28px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch .slider {
+  position: absolute; inset: 0; background: var(--border); border-radius: 999px;
+  transition: background .2s;
+}
+.switch .slider::before {
+  content: ""; position: absolute; height: 22px; width: 22px; left: 3px; top: 3px;
+  background: #fff; border-radius: 50%; transition: transform .2s; box-shadow: 0 1px 2px rgba(0,0,0,.3);
+}
+.switch input:checked + .slider { background: var(--primary); }
+.switch input:checked + .slider::before { transform: translateX(18px); }
+
+/* Credit memo line in the balance sheet */
+.sr.memo { color: var(--muted); font-size: 14px; padding: 8px 0; }
+.sr.memo span:last-child { color: var(--muted); }
+
 /* Tabbed views + bottom tab bar */
 #views { padding-bottom: 96px; }
 .tabbar {

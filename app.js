@@ -33,7 +33,8 @@ const INCOME_CATEGORIES = [
   { name: "Refund",    emoji: "↩️" },
   { name: "Other",     emoji: "💵" },
 ];
-const METHODS = ["Cash", "UPI", "Card"];
+const METHODS = ["Cash", "UPI", "Debit Card", "Credit Card"];
+const CREDIT_METHOD = "Credit Card";       // spend on this doesn't reduce balance yet
 // Set to true only if you re-enable new sign-ups in Firebase. When false, the
 // login screen offers Sign in only (no "Create an account"), matching the
 // project's disabled-signup setting.
@@ -342,7 +343,13 @@ function render() {
   const MK = monthKey(viewMonth);
   const firstOfMonth = MK + "-01";
 
-  let opening = 0, incomeThis = 0, expenseThis = 0;
+  // Credit-card spend is a pending liability. Unless the toggle is on, it does
+  // not reduce the balance (the cash is still in the account until repayment).
+  const includeCredit = localStorage.getItem("include_credit") === "1";
+  const isCredit = (t) => isExpense(t) && t.method === CREDIT_METHOD;
+  const countsForBalance = (t) => !(isCredit(t) && !includeCredit);
+
+  let opening = 0, incomeThis = 0, expenseThis = 0, creditThis = 0;
   const byCatExpense = {}, byCatIncome = {};
 
   for (const t of expenses) {
@@ -350,11 +357,14 @@ function render() {
     if (!t.date) continue;
     if (t.date < firstOfMonth) {
       // Everything before this month rolls into the opening balance.
-      opening += isExpense(t) ? -amt : amt;
+      if (countsForBalance(t)) opening += isExpense(t) ? -amt : amt;
     } else if (t.date.slice(0, 7) === MK) {
       if (isExpense(t)) {
-        expenseThis += amt;
-        byCatExpense[t.category] = (byCatExpense[t.category] || 0) + amt;
+        if (isCredit(t)) creditThis += amt;
+        if (countsForBalance(t)) {
+          expenseThis += amt;
+          byCatExpense[t.category] = (byCatExpense[t.category] || 0) + amt;
+        }
       } else {
         incomeThis += amt;
         byCatIncome[t.category] = (byCatIncome[t.category] || 0) + amt;
@@ -363,6 +373,15 @@ function render() {
   }
   const remaining = opening + incomeThis - expenseThis;
   const signed = (n) => (n < 0 ? "−" : "") + fmt(n);
+
+  // Reflect toggle state + credit memo line
+  $("includeCredit").checked = includeCredit;
+  const showMemo = !includeCredit && creditThis > 0;
+  $("creditMemo").classList.toggle("hidden", !showMemo);
+  if (showMemo) {
+    $("creditMemoLabel").textContent = "On credit card this month (not deducted)";
+    $("creditMemoAmt").textContent = fmt(creditThis);
+  }
 
   // Header + month navigator
   $("todayLabel").textContent = new Date().toLocaleDateString(LOCALE, {
@@ -662,6 +681,12 @@ document.querySelectorAll(".scope-toggle").forEach((tog) => {
     .addEventListener("click", () => changeDashPeriod(type, -1));
   document.querySelector(`[data-nav="${type}-next"]`)
     .addEventListener("click", () => changeDashPeriod(type, 1));
+});
+
+// Include-credit-card toggle (Balance tab)
+$("includeCredit").addEventListener("change", (e) => {
+  localStorage.setItem("include_credit", e.target.checked ? "1" : "0");
+  render();
 });
 
 $("expenseForm").addEventListener("submit", async (e) => {
