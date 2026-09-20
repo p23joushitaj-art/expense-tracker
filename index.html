@@ -69,58 +69,77 @@
   <div id="app" class="hidden">
     <header class="topbar">
       <div>
-        <div class="app-title">Expenses</div>
+        <div class="app-title">My Money</div>
         <div class="muted small" id="todayLabel"></div>
       </div>
       <button id="lockBtn" class="icon-btn" title="Lock">🔒</button>
     </header>
 
-    <section class="totals">
-      <div class="total-card">
-        <div class="muted small">Today</div>
-        <div class="total-amount" id="todayTotal">₹0</div>
-      </div>
+    <!-- Month navigator -->
+    <div class="month-nav">
+      <button id="prevMonth" class="nav-btn" aria-label="Previous month">‹</button>
+      <div id="monthLabel" class="month-label">Month</div>
+      <button id="nextMonth" class="nav-btn" aria-label="Next month">›</button>
+    </div>
+
+    <!-- Headline remaining balance -->
+    <section class="totals-single">
       <div class="total-card accent">
-        <div class="muted small">This month</div>
-        <div class="total-amount" id="monthTotal">₹0</div>
+        <div class="muted small">Remaining balance</div>
+        <div class="total-amount big" id="remainingBalance">₹0</div>
+        <div class="muted small" id="balanceSubtitle"></div>
       </div>
     </section>
 
-    <section class="card" id="breakdownCard">
-      <div class="card-head">
-        <h2>This month by category</h2>
-      </div>
-      <div id="breakdown" class="breakdown">
-        <p class="muted small">No expenses yet this month.</p>
-      </div>
-    </section>
-
+    <!-- Balance sheet -->
     <section class="card">
-      <div class="card-head">
-        <h2>Recent</h2>
+      <div class="card-head"><h2>Balance sheet</h2></div>
+      <div class="ledger">
+        <div class="sr">
+          <span>Opening balance<br><span class="muted small" id="openingNote"></span></span>
+          <span id="openingBal">₹0</span>
+        </div>
+        <div class="sr head income"><span>＋ Income</span><span id="incomeTotal">+₹0</span></div>
+        <div id="incomeBreakdown" class="subrows"></div>
+        <div class="sr head expense"><span>－ Expenses</span><span id="expenseTotal">−₹0</span></div>
+        <div id="breakdown" class="subrows"></div>
+        <div class="sr total"><span>Remaining balance</span><span id="remainingRow">₹0</span></div>
       </div>
+    </section>
+
+    <!-- Transactions -->
+    <section class="card">
+      <div class="card-head"><h2>Transactions</h2></div>
       <ul id="list" class="list">
-        <li class="muted small empty">No expenses yet. Tap + to add one.</li>
+        <li class="muted small empty">No transactions this month. Tap + to add one.</li>
       </ul>
     </section>
 
-    <button id="fab" class="fab" aria-label="Add expense">+</button>
+    <button id="fab" class="fab" aria-label="Add entry">+</button>
   </div>
 
-  <!-- Add expense sheet -->
+  <!-- Add entry sheet -->
   <div id="sheet" class="sheet-overlay hidden">
     <div class="sheet">
       <div class="sheet-handle"></div>
-      <h2>Add expense</h2>
+      <h2 id="sheetTitle">Add expense</h2>
+
+      <div class="type-toggle">
+        <button type="button" data-type="expense" class="active">Expense</button>
+        <button type="button" data-type="income">Income</button>
+      </div>
+
       <form id="expenseForm">
         <label>Amount (₹)</label>
         <input id="amount" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required />
 
-        <label>Category</label>
+        <label id="catLabel">Category</label>
         <div class="chips" id="categoryChips"></div>
 
-        <label>Payment method</label>
-        <div class="chips" id="methodChips"></div>
+        <div id="methodBlock">
+          <label>Payment method</label>
+          <div class="chips" id="methodChips"></div>
+        </div>
 
         <label>Date</label>
         <input id="date" type="date" required />
@@ -136,6 +155,6 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=4"></script>
+  <script type="module" src="app.js?v=5"></script>
 </body>
 </html>

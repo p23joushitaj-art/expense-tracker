@@ -25,6 +25,14 @@ const CATEGORIES = [
   { name: "Shopping",  emoji: "🛍️" },
   { name: "Other",     emoji: "📦" },
 ];
+const INCOME_CATEGORIES = [
+  { name: "Salary",    emoji: "💼" },
+  { name: "Business",  emoji: "🏪" },
+  { name: "Interest",  emoji: "🏦" },
+  { name: "Gift",      emoji: "🎁" },
+  { name: "Refund",    emoji: "↩️" },
+  { name: "Other",     emoji: "💵" },
+];
 const METHODS = ["Cash", "UPI", "Card"];
 // Set to true only if you re-enable new sign-ups in Firebase. When false, the
 // login screen offers Sign in only (no "Create an account"), matching the
@@ -96,7 +104,9 @@ function subscribeExpenses() {
   }, (err) => showError(err));
 }
 
-async function addExpense(data) {
+// Both income and expenses live in the same collection (kept named "expenses"
+// so existing data and security rules are untouched). Each doc has a `type`.
+async function addTransaction(data) {
   await addDoc(collection(db, "users", uid, "expenses"), {
     ...data,
     createdAt: serverTimestamp(),
@@ -281,8 +291,9 @@ $("lockBtn").addEventListener("click", () => {
 });
 
 // ================================ RENDER ====================================
+// Format an amount as currency (always positive digits; sign is added by callers).
 const fmt = (n) =>
-  CURRENCY + Number(n || 0).toLocaleString(LOCALE, {
+  CURRENCY + Math.abs(Number(n || 0)).toLocaleString(LOCALE, {
     minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 2,
     maximumFractionDigits: 2,
   });
@@ -292,74 +303,135 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function catEmoji(name) {
-  const c = CATEGORIES.find((c) => c.name === name);
-  return c ? c.emoji : "📦";
+const isExpense = (t) => (t.type || "expense") === "expense";
+
+function emojiFor(name, type) {
+  const list = type === "income" ? INCOME_CATEGORIES : CATEGORIES;
+  const c = list.find((c) => c.name === name);
+  return c ? c.emoji : (type === "income" ? "💵" : "📦");
+}
+
+// The month currently being viewed (first day of that month). Defaults to now.
+let viewMonth = new Date();
+viewMonth.setDate(1);
+viewMonth.setHours(0, 0, 0, 0);
+
+const monthKey = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+function isCurrentMonth() {
+  const now = new Date();
+  return viewMonth.getFullYear() === now.getFullYear() &&
+         viewMonth.getMonth() === now.getMonth();
+}
+
+function changeMonth(delta) {
+  const d = new Date(viewMonth);
+  d.setMonth(d.getMonth() + delta);
+  // Never navigate past the current month (compare by year + month only).
+  const now = new Date();
+  if (d.getFullYear() > now.getFullYear() ||
+     (d.getFullYear() === now.getFullYear() && d.getMonth() > now.getMonth())) return;
+  viewMonth = d;
+  render();
 }
 
 function render() {
   if (appEl.classList.contains("hidden")) return;
 
-  const today = todayStr();
-  const monthPrefix = today.slice(0, 7); // YYYY-MM
+  const MK = monthKey(viewMonth);
+  const firstOfMonth = MK + "-01";
 
-  let todayTotal = 0, monthTotal = 0;
-  const byCat = {};
+  let opening = 0, incomeThis = 0, expenseThis = 0;
+  const byCatExpense = {}, byCatIncome = {};
 
-  for (const e of expenses) {
-    const amt = Number(e.amount) || 0;
-    if (e.date === today) todayTotal += amt;
-    if (e.date && e.date.startsWith(monthPrefix)) {
-      monthTotal += amt;
-      byCat[e.category] = (byCat[e.category] || 0) + amt;
+  for (const t of expenses) {
+    const amt = Number(t.amount) || 0;
+    if (!t.date) continue;
+    if (t.date < firstOfMonth) {
+      // Everything before this month rolls into the opening balance.
+      opening += isExpense(t) ? -amt : amt;
+    } else if (t.date.slice(0, 7) === MK) {
+      if (isExpense(t)) {
+        expenseThis += amt;
+        byCatExpense[t.category] = (byCatExpense[t.category] || 0) + amt;
+      } else {
+        incomeThis += amt;
+        byCatIncome[t.category] = (byCatIncome[t.category] || 0) + amt;
+      }
     }
   }
+  const remaining = opening + incomeThis - expenseThis;
+  const signed = (n) => (n < 0 ? "−" : "") + fmt(n);
 
-  $("todayTotal").textContent = fmt(todayTotal);
-  $("monthTotal").textContent = fmt(monthTotal);
+  // Header + month navigator
   $("todayLabel").textContent = new Date().toLocaleDateString(LOCALE, {
     weekday: "long", day: "numeric", month: "long",
   });
+  $("monthLabel").textContent =
+    viewMonth.toLocaleDateString(LOCALE, { month: "long", year: "numeric" });
+  $("nextMonth").disabled = isCurrentMonth();
 
-  // Breakdown
-  const bd = $("breakdown");
-  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
-  if (!cats.length) {
-    bd.innerHTML = '<p class="muted small">No expenses yet this month.</p>';
-  } else {
-    const max = cats[0][1];
-    bd.innerHTML = cats.map(([name, amt]) => `
-      <div class="bd-row">
-        <div class="bd-top">
-          <span>${catEmoji(name)} ${name}</span>
-          <span>${fmt(amt)}</span>
-        </div>
-        <div class="bd-bar"><div class="bd-fill" style="width:${Math.max(6, (amt / max) * 100)}%"></div></div>
-      </div>`).join("");
-  }
+  // Headline remaining balance
+  const rb = $("remainingBalance");
+  rb.textContent = signed(remaining);
+  rb.classList.toggle("negative", remaining < 0);
+  $("balanceSubtitle").textContent = isCurrentMonth()
+    ? "left as of today"
+    : "at end of " + viewMonth.toLocaleDateString(LOCALE, { month: "long" });
 
-  // Recent list (latest 40)
+  // Balance-sheet rows
+  const prev = new Date(viewMonth); prev.setMonth(prev.getMonth() - 1);
+  $("openingBal").textContent = signed(opening);
+  $("openingNote").textContent =
+    "carried from " + prev.toLocaleDateString(LOCALE, { month: "long" });
+  $("incomeTotal").textContent = "+" + fmt(incomeThis);
+  $("expenseTotal").textContent = "−" + fmt(expenseThis);
+  $("remainingRow").textContent = signed(remaining);
+  $("remainingRow").classList.toggle("negative", remaining < 0);
+
+  $("incomeBreakdown").innerHTML =
+    subrows(byCatIncome, "income") ||
+    '<div class="subrow muted small">No income this month.</div>';
+  $("breakdown").innerHTML =
+    subrows(byCatExpense, "expense") ||
+    '<div class="subrow muted small">No expenses this month.</div>';
+
+  // Transactions for the viewed month (already newest-first from the query)
+  const monthTx = expenses.filter((t) => t.date && t.date.slice(0, 7) === MK);
   const list = $("list");
-  if (!expenses.length) {
-    list.innerHTML = '<li class="muted small empty">No expenses yet. Tap + to add one.</li>';
+  if (!monthTx.length) {
+    list.innerHTML =
+      '<li class="muted small empty">No transactions this month. Tap + to add one.</li>';
     return;
   }
-  list.innerHTML = expenses.slice(0, 40).map((e) => {
-    const dateLabel = new Date(e.date + "T00:00:00").toLocaleDateString(LOCALE, {
-      day: "numeric", month: "short",
-    });
-    const sub = [dateLabel, e.method, e.note].filter(Boolean).join(" · ");
+  list.innerHTML = monthTx.map((t) => {
+    const income = !isExpense(t);
+    const dateLabel = new Date(t.date + "T00:00:00")
+      .toLocaleDateString(LOCALE, { day: "numeric", month: "short" });
+    const sub = [dateLabel, income ? null : t.method, t.note].filter(Boolean).join(" · ");
     return `
       <li class="item">
-        <div class="item-emoji">${catEmoji(e.category)}</div>
+        <div class="item-emoji">${emojiFor(t.category, t.type)}</div>
         <div class="item-main">
-          <div class="item-cat">${escapeHtml(e.category)}</div>
+          <div class="item-cat">${escapeHtml(t.category)}</div>
           <div class="item-sub">${escapeHtml(sub)}</div>
         </div>
-        <div class="item-amount">${fmt(e.amount)}</div>
-        <button class="item-del" data-id="${e.id}" title="Delete">🗑️</button>
+        <div class="item-amount ${income ? "income" : ""}">${income ? "+" : "−"}${fmt(t.amount)}</div>
+        <button class="item-del" data-id="${t.id}" title="Delete">🗑️</button>
       </li>`;
   }).join("");
+}
+
+// Render category/source rows for the balance sheet.
+function subrows(map, kind) {
+  const rows = Object.entries(map).sort((a, b) => b[1] - a[1]);
+  if (!rows.length) return "";
+  return rows.map(([name, amt]) =>
+    `<div class="subrow">
+       <span>${emojiFor(name, kind)} ${escapeHtml(name)}</span>
+       <span>${fmt(amt)}</span>
+     </div>`).join("");
 }
 
 function escapeHtml(s) {
@@ -372,21 +444,20 @@ function escapeHtml(s) {
 $("list").addEventListener("click", (e) => {
   const btn = e.target.closest(".item-del");
   if (!btn) return;
-  if (confirm("Delete this expense?")) removeExpense(btn.dataset.id);
+  if (confirm("Delete this entry?")) removeExpense(btn.dataset.id);
 });
 
 // ============================== ADD SHEET ===================================
+let txType = "expense";                    // "expense" | "income"
 let selectedCategory = CATEGORIES[0].name;
 let selectedMethod = METHODS[0];
 
+const currentCats = () => (txType === "income" ? INCOME_CATEGORIES : CATEGORIES);
+
 function buildChips() {
-  $("categoryChips").innerHTML = CATEGORIES.map((c) =>
-    `<button type="button" class="chip" data-cat="${c.name}">${c.emoji} ${c.name}</button>`
-  ).join("");
   $("methodChips").innerHTML = METHODS.map((m) =>
-    `<button type="button" class="chip" data-method="${m}">${m}</button>`
-  ).join("");
-  refreshChipState();
+    `<button type="button" class="chip" data-method="${m}">${m}</button>`).join("");
+  renderCategoryChips();
 
   $("categoryChips").addEventListener("click", (e) => {
     const b = e.target.closest(".chip"); if (!b) return;
@@ -396,6 +467,25 @@ function buildChips() {
     const b = e.target.closest(".chip"); if (!b) return;
     selectedMethod = b.dataset.method; refreshChipState();
   });
+  document.querySelectorAll(".type-toggle button").forEach((btn) =>
+    btn.addEventListener("click", () => setTxType(btn.dataset.type)));
+}
+
+function renderCategoryChips() {
+  $("categoryChips").innerHTML = currentCats().map((c) =>
+    `<button type="button" class="chip" data-cat="${c.name}">${c.emoji} ${c.name}</button>`).join("");
+}
+
+function setTxType(type) {
+  txType = type;
+  selectedCategory = currentCats()[0].name;
+  renderCategoryChips();
+  document.querySelectorAll(".type-toggle button").forEach((b) =>
+    b.classList.toggle("active", b.dataset.type === type));
+  $("methodBlock").classList.toggle("hidden", type === "income");
+  $("catLabel").textContent = type === "income" ? "Source" : "Category";
+  $("sheetTitle").textContent = type === "income" ? "Add income" : "Add expense";
+  refreshChipState();
 }
 
 function refreshChipState() {
@@ -409,9 +499,8 @@ function openSheet() {
   $("date").value = todayStr();
   $("amount").value = "";
   $("note").value = "";
-  selectedCategory = CATEGORIES[0].name;
   selectedMethod = METHODS[0];
-  refreshChipState();
+  setTxType("expense");
   $("sheet").classList.remove("hidden");
   setTimeout(() => $("amount").focus(), 100);
 }
@@ -420,22 +509,25 @@ function closeSheet() { $("sheet").classList.add("hidden"); }
 $("fab").addEventListener("click", openSheet);
 $("cancelBtn").addEventListener("click", closeSheet);
 $("sheet").addEventListener("click", (e) => { if (e.target === $("sheet")) closeSheet(); });
+$("prevMonth").addEventListener("click", () => changeMonth(-1));
+$("nextMonth").addEventListener("click", () => changeMonth(1));
 
 $("expenseForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const amount = parseFloat($("amount").value);
   if (!(amount > 0)) { alert("Please enter an amount."); return; }
   const data = {
+    type: txType,
     amount,
     category: selectedCategory,
-    method: selectedMethod,
     date: $("date").value || todayStr(),
     note: $("note").value.trim(),
   };
+  if (txType === "expense") data.method = selectedMethod;
   const saveBtn = e.submitter;
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "Saving…"; }
   try {
-    await addExpense(data);
+    await addTransaction(data);
     closeSheet();
   } catch (err) {
     alert("Could not save: " + err.message);

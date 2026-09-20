@@ -7,6 +7,7 @@
   --primary-dark: #0d5f58;
   --accent: #7c3aed;
   --danger: #dc2626;
+  --income: #16a34a;
   --border: #e2e8f0;
   --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
 }
@@ -195,6 +196,54 @@ form input:focus { outline: 2px solid var(--primary); background: #fff; }
 .btn.primary { background: var(--primary); color: #fff; }
 .btn.primary:active { background: var(--primary-dark); }
 .btn.ghost { background: var(--bg); color: var(--text); }
+
+/* Month navigator */
+.month-nav {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  padding: 6px 18px 0;
+}
+.month-label { font-weight: 600; font-size: 16px; min-width: 160px; text-align: center; }
+.nav-btn {
+  border: none; background: var(--card); box-shadow: var(--shadow);
+  width: 38px; height: 38px; border-radius: 10px; font-size: 22px; line-height: 1;
+  color: var(--text); cursor: pointer;
+}
+.nav-btn:disabled { opacity: .35; cursor: default; }
+
+/* Headline balance card */
+.totals-single { padding: 10px 18px 4px; }
+.total-amount.big { font-size: 38px; }
+.total-card.accent .total-amount.negative { color: #fecaca; }
+
+/* Ledger / balance sheet */
+.ledger { display: flex; flex-direction: column; }
+.sr {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 12px; padding: 10px 0; font-size: 16px;
+}
+.sr.head { font-weight: 600; border-top: 1px solid var(--border); }
+.sr.head.income span:last-child { color: var(--income); }
+.sr.head.expense span:last-child { color: var(--danger); }
+.sr.total {
+  border-top: 2px solid var(--border); font-weight: 700; font-size: 18px; margin-top: 4px;
+}
+#remainingBalance.negative, #remainingRow.negative { color: var(--danger); }
+.subrows { display: flex; flex-direction: column; gap: 6px; padding: 2px 0 8px 10px; }
+.subrow { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); }
+
+/* Income amount in transaction list */
+.item-amount.income { color: var(--income); }
+
+/* Expense/Income toggle in the add sheet */
+.type-toggle {
+  display: flex; background: var(--bg); border-radius: 12px; padding: 4px; gap: 4px;
+  margin-bottom: 4px;
+}
+.type-toggle button {
+  flex: 1; padding: 11px; border: none; background: transparent; color: var(--muted);
+  font-size: 15px; font-weight: 600; border-radius: 9px; cursor: pointer;
+}
+.type-toggle button.active { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
 
 /* Login screen */
 .auth-form { display: flex; flex-direction: column; gap: 12px; margin-top: 22px; text-align: left; }
