@@ -26,6 +26,10 @@ const CATEGORIES = [
   { name: "Other",     emoji: "📦" },
 ];
 const METHODS = ["Cash", "UPI", "Card"];
+// Set to true only if you re-enable new sign-ups in Firebase. When false, the
+// login screen offers Sign in only (no "Create an account"), matching the
+// project's disabled-signup setting.
+const ALLOW_SIGNUP = false;
 // ---------------------------------------------------------------------------
 
 // ---- Elements ----
@@ -115,6 +119,10 @@ function showError(e) {
 let authMode = "signin"; // "signin" | "signup"
 
 function showAuthScreen() {
+  if (!ALLOW_SIGNUP) {
+    authMode = "signin";
+    document.querySelector(".auth-toggle").classList.add("hidden");
+  }
   applyAuthMode();
   $("authError").classList.add("hidden");
   authScreen.classList.remove("hidden");
@@ -144,6 +152,7 @@ function friendlyAuthError(code, message) {
     "auth/user-not-found": "No account with that email — create one below.",
     "auth/too-many-requests": "Too many attempts. Please wait a minute and try again.",
     "auth/network-request-failed": "No internet connection. Check your network and try again.",
+    "auth/admin-restricted-operation": "New sign-ups are turned off for this app.",
   };
   return map[code] || message || "Something went wrong. Please try again.";
 }
