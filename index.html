@@ -75,47 +75,114 @@
       <button id="lockBtn" class="icon-btn" title="Lock">🔒</button>
     </header>
 
-    <!-- Month navigator -->
-    <div class="month-nav">
-      <button id="prevMonth" class="nav-btn" aria-label="Previous month">‹</button>
-      <div id="monthLabel" class="month-label">Month</div>
-      <button id="nextMonth" class="nav-btn" aria-label="Next month">›</button>
-    </div>
-
-    <!-- Headline remaining balance -->
-    <section class="totals-single">
-      <div class="total-card accent">
-        <div class="muted small">Remaining balance</div>
-        <div class="total-amount big" id="remainingBalance">₹0</div>
-        <div class="muted small" id="balanceSubtitle"></div>
-      </div>
-    </section>
-
-    <!-- Balance sheet -->
-    <section class="card">
-      <div class="card-head"><h2>Balance sheet</h2></div>
-      <div class="ledger">
-        <div class="sr">
-          <span>Opening balance<br><span class="muted small" id="openingNote"></span></span>
-          <span id="openingBal">₹0</span>
+    <main id="views">
+      <!-- ===================== BALANCE TAB ===================== -->
+      <div id="viewBalance" class="view">
+        <div class="month-nav">
+          <button id="prevMonth" class="nav-btn" aria-label="Previous month">‹</button>
+          <div id="monthLabel" class="month-label">Month</div>
+          <button id="nextMonth" class="nav-btn" aria-label="Next month">›</button>
         </div>
-        <div class="sr head income"><span>＋ Income</span><span id="incomeTotal">+₹0</span></div>
-        <div id="incomeBreakdown" class="subrows"></div>
-        <div class="sr head expense"><span>－ Expenses</span><span id="expenseTotal">−₹0</span></div>
-        <div id="breakdown" class="subrows"></div>
-        <div class="sr total"><span>Remaining balance</span><span id="remainingRow">₹0</span></div>
-      </div>
-    </section>
 
-    <!-- Transactions -->
-    <section class="card">
-      <div class="card-head"><h2>Transactions</h2></div>
-      <ul id="list" class="list">
-        <li class="muted small empty">No transactions this month. Tap + to add one.</li>
-      </ul>
-    </section>
+        <section class="totals-single">
+          <div class="total-card accent">
+            <div class="muted small">Remaining balance</div>
+            <div class="total-amount big" id="remainingBalance">₹0</div>
+            <div class="muted small" id="balanceSubtitle"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Balance sheet</h2></div>
+          <div class="ledger">
+            <div class="sr">
+              <span>Opening balance<br><span class="muted small" id="openingNote"></span></span>
+              <span id="openingBal">₹0</span>
+            </div>
+            <div class="sr head income"><span>＋ Income</span><span id="incomeTotal">+₹0</span></div>
+            <div id="incomeBreakdown" class="subrows"></div>
+            <div class="sr head expense"><span>－ Expenses</span><span id="expenseTotal">−₹0</span></div>
+            <div id="breakdown" class="subrows"></div>
+            <div class="sr total"><span>Remaining balance</span><span id="remainingRow">₹0</span></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Transactions</h2></div>
+          <ul id="list" class="list">
+            <li class="muted small empty">No transactions this month. Tap + to add one.</li>
+          </ul>
+        </section>
+      </div>
+
+      <!-- ===================== EXPENSES DASHBOARD ===================== -->
+      <div id="viewExpenses" class="view hidden">
+        <div class="scope-toggle" data-dash="expense">
+          <button type="button" data-scope="month" class="active">Month</button>
+          <button type="button" data-scope="year">Year</button>
+        </div>
+        <div class="month-nav">
+          <button class="nav-btn" data-nav="expense-prev" aria-label="Previous">‹</button>
+          <div class="month-label" id="expPeriodLabel">Period</div>
+          <button class="nav-btn" data-nav="expense-next" aria-label="Next">›</button>
+        </div>
+        <section class="totals-single">
+          <div class="total-card accent expense-card">
+            <div class="muted small">Total expenses</div>
+            <div class="total-amount big" id="expTotal">₹0</div>
+            <div class="muted small" id="expPeriodSub"></div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2>By category</h2></div>
+          <div id="expByCategory" class="breakdown"></div>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2>By payment mode</h2></div>
+          <div id="expByMethod" class="breakdown"></div>
+        </section>
+        <section class="card hidden" id="expByMonthCard">
+          <div class="card-head"><h2>By month</h2></div>
+          <div id="expByMonth" class="breakdown"></div>
+        </section>
+      </div>
+
+      <!-- ===================== INCOME DASHBOARD ===================== -->
+      <div id="viewIncome" class="view hidden">
+        <div class="scope-toggle" data-dash="income">
+          <button type="button" data-scope="month" class="active">Month</button>
+          <button type="button" data-scope="year">Year</button>
+        </div>
+        <div class="month-nav">
+          <button class="nav-btn" data-nav="income-prev" aria-label="Previous">‹</button>
+          <div class="month-label" id="incPeriodLabel">Period</div>
+          <button class="nav-btn" data-nav="income-next" aria-label="Next">›</button>
+        </div>
+        <section class="totals-single">
+          <div class="total-card accent income-card">
+            <div class="muted small">Total income</div>
+            <div class="total-amount big" id="incTotal">₹0</div>
+            <div class="muted small" id="incPeriodSub"></div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2>By source</h2></div>
+          <div id="incBySource" class="breakdown"></div>
+        </section>
+        <section class="card hidden" id="incByMonthCard">
+          <div class="card-head"><h2>By month</h2></div>
+          <div id="incByMonth" class="breakdown"></div>
+        </section>
+      </div>
+    </main>
 
     <button id="fab" class="fab" aria-label="Add entry">+</button>
+
+    <nav class="tabbar">
+      <button type="button" data-tab="balance" class="active"><span class="tab-ic">📊</span>Balance</button>
+      <button type="button" data-tab="expenses"><span class="tab-ic">💸</span>Expenses</button>
+      <button type="button" data-tab="income"><span class="tab-ic">💰</span>Income</button>
+    </nav>
   </div>
 
   <!-- Add entry sheet -->
@@ -155,6 +222,6 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=5"></script>
+  <script type="module" src="app.js?v=6"></script>
 </body>
 </html>

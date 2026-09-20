@@ -147,7 +147,7 @@ html, body {
 
 /* FAB */
 .fab {
-  position: fixed; right: 20px; bottom: 24px;
+  position: fixed; right: 20px; bottom: 84px;
   width: 60px; height: 60px; border-radius: 50%;
   border: none; background: var(--primary); color: #fff;
   font-size: 32px; line-height: 1; box-shadow: 0 6px 16px rgba(15,118,110,.4);
@@ -244,6 +244,38 @@ form input:focus { outline: 2px solid var(--primary); background: #fff; }
   font-size: 15px; font-weight: 600; border-radius: 9px; cursor: pointer;
 }
 .type-toggle button.active { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
+
+/* Tabbed views + bottom tab bar */
+#views { padding-bottom: 96px; }
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
+  display: flex; background: var(--card);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -2px 10px rgba(0,0,0,.06);
+}
+.tabbar button {
+  flex: 1; border: none; background: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 9px 0 8px; font-size: 12px; color: var(--muted); font-weight: 600;
+}
+.tabbar button.active { color: var(--primary); }
+.tab-ic { font-size: 20px; line-height: 1; filter: grayscale(.25); opacity: .8; }
+.tabbar button.active .tab-ic { filter: none; opacity: 1; }
+
+/* Dashboard scope toggle (Month / Year) */
+.scope-toggle {
+  display: flex; background: var(--card); border-radius: 12px; padding: 4px; gap: 4px;
+  margin: 10px 18px 0; box-shadow: var(--shadow);
+}
+.scope-toggle button {
+  flex: 1; padding: 9px; border: none; background: transparent; color: var(--muted);
+  font-size: 14px; font-weight: 600; border-radius: 9px; cursor: pointer;
+}
+.scope-toggle button.active { background: var(--primary); color: #fff; }
+.bd-top .muted { font-weight: 500; }
+.total-card.expense-card { background: linear-gradient(135deg, #b45309, #92400e); }
+.total-card.income-card { background: linear-gradient(135deg, #15803d, #166534); }
 
 /* Login screen */
 .auth-form { display: flex; flex-direction: column; gap: 12px; margin-top: 22px; text-align: left; }

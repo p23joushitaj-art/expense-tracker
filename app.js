@@ -100,7 +100,7 @@ function subscribeExpenses() {
   );
   unsubscribe = onSnapshot(q, (snap) => {
     expenses = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    render();
+    renderActive();
   }, (err) => showError(err));
 }
 
@@ -277,7 +277,7 @@ function submitPin() {
 function enterApp() {
   pinScreen.classList.add("hidden");
   appEl.classList.remove("hidden");
-  render();
+  renderActive();
 }
 
 $("pinDots") && document.querySelector(".keypad").addEventListener("click", (e) => {
@@ -440,6 +440,141 @@ function escapeHtml(s) {
   }[c]));
 }
 
+// ============================== TABS + DASHBOARDS ===========================
+let currentTab = "balance";
+const TAB_TITLES = { balance: "My Money", expenses: "Expenses", income: "Income" };
+
+function renderActive() {
+  if (appEl.classList.contains("hidden")) return;
+  if (currentTab === "balance") render();
+  else renderDash(currentTab === "expenses" ? "expense" : "income");
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll(".tabbar button").forEach((b) =>
+    b.classList.toggle("active", b.dataset.tab === tab));
+  $("viewBalance").classList.toggle("hidden", tab !== "balance");
+  $("viewExpenses").classList.toggle("hidden", tab !== "expenses");
+  $("viewIncome").classList.toggle("hidden", tab !== "income");
+  document.querySelector(".app-title").textContent = TAB_TITLES[tab];
+  renderActive();
+  window.scrollTo(0, 0);
+}
+
+function monthStart(d) { const x = new Date(d); x.setDate(1); x.setHours(0, 0, 0, 0); return x; }
+
+// Independent period state for each dashboard.
+const dash = {
+  expense: { scope: "month", period: monthStart(new Date()) },
+  income:  { scope: "month", period: monthStart(new Date()) },
+};
+
+function periodMatch(txDate, scope, period) {
+  if (scope === "month") return txDate.slice(0, 7) === monthKey(period);
+  return txDate.slice(0, 4) === String(period.getFullYear());
+}
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function breakdownRows(map, emojiType) {
+  const rows = Object.entries(map).sort((a, b) => b[1] - a[1]);
+  if (!rows.length) return "";
+  const total = rows.reduce((s, [, v]) => s + v, 0);
+  const max = rows[0][1] || 1;
+  return rows.map(([name, amt]) => `
+    <div class="bd-row">
+      <div class="bd-top">
+        <span>${emojiType ? emojiFor(name, emojiType) + " " : ""}${escapeHtml(name)}</span>
+        <span>${fmt(amt)} <span class="muted small">${total ? Math.round(amt / total * 100) : 0}%</span></span>
+      </div>
+      <div class="bd-bar"><div class="bd-fill" style="width:${Math.max(4, amt / max * 100)}%"></div></div>
+    </div>`).join("");
+}
+
+function monthlyRows(byMonth) {
+  const entries = Object.entries(byMonth);
+  if (!entries.length) return "";
+  const max = Math.max(...entries.map(([, v]) => v)) || 1;
+  return entries.sort((a, b) => a[0].localeCompare(b[0])).map(([mo, amt]) => `
+    <div class="bd-row">
+      <div class="bd-top"><span>${MONTH_NAMES[parseInt(mo, 10) - 1]}</span><span>${fmt(amt)}</span></div>
+      <div class="bd-bar"><div class="bd-fill" style="width:${Math.max(4, amt / max * 100)}%"></div></div>
+    </div>`).join("");
+}
+
+const emptyBd = '<p class="muted small">Nothing in this period yet.</p>';
+
+function renderDash(type) {
+  const st = dash[type];
+  const isYear = st.scope === "year";
+  const items = expenses.filter((t) =>
+    (t.type || "expense") === type && t.date && periodMatch(t.date, st.scope, st.period));
+
+  let total = 0;
+  const byCat = {}, byMethod = {}, byMonth = {};
+  for (const t of items) {
+    const amt = Number(t.amount) || 0;
+    total += amt;
+    byCat[t.category] = (byCat[t.category] || 0) + amt;
+    if (type === "expense") {
+      const m = t.method || "Other";
+      byMethod[m] = (byMethod[m] || 0) + amt;
+    }
+    const mo = t.date.slice(5, 7);
+    byMonth[mo] = (byMonth[mo] || 0) + amt;
+  }
+
+  const ids = type === "expense"
+    ? { label: "expPeriodLabel", sub: "expPeriodSub", total: "expTotal",
+        cat: "expByCategory", method: "expByMethod", monthCard: "expByMonthCard", month: "expByMonth" }
+    : { label: "incPeriodLabel", sub: "incPeriodSub", total: "incTotal",
+        cat: "incBySource", monthCard: "incByMonthCard", month: "incByMonth" };
+
+  $(ids.label).textContent = isYear
+    ? String(st.period.getFullYear())
+    : st.period.toLocaleDateString(LOCALE, { month: "long", year: "numeric" });
+  $(ids.total).textContent = fmt(total);
+  const noun = type === "expense" ? "expense" : "income entry";
+  $(ids.sub).textContent = items.length
+    ? `${items.length} ${items.length === 1 ? noun : (type === "expense" ? "expenses" : "income entries")}`
+    : "No entries in this period";
+
+  document.querySelectorAll(`.scope-toggle[data-dash="${type}"] button`).forEach((b) =>
+    b.classList.toggle("active", b.dataset.scope === st.scope));
+
+  const now = new Date();
+  const atCurrent = isYear
+    ? st.period.getFullYear() === now.getFullYear()
+    : (st.period.getFullYear() === now.getFullYear() && st.period.getMonth() === now.getMonth());
+  document.querySelector(`[data-nav="${type}-next"]`).disabled = atCurrent;
+
+  $(ids.cat).innerHTML = breakdownRows(byCat, type) || emptyBd;
+  if (ids.method) $(ids.method).innerHTML = breakdownRows(byMethod, null) || emptyBd;
+  $(ids.monthCard).classList.toggle("hidden", !isYear);
+  if (isYear) $(ids.month).innerHTML = monthlyRows(byMonth) || emptyBd;
+}
+
+function changeDashPeriod(type, delta) {
+  const st = dash[type];
+  const d = new Date(st.period);
+  if (st.scope === "year") d.setFullYear(d.getFullYear() + delta);
+  else d.setMonth(d.getMonth() + delta);
+  const now = new Date();
+  const future = st.scope === "year"
+    ? d.getFullYear() > now.getFullYear()
+    : (d.getFullYear() > now.getFullYear() ||
+       (d.getFullYear() === now.getFullYear() && d.getMonth() > now.getMonth()));
+  if (future) return;
+  st.period = d;
+  renderDash(type);
+}
+
+function setDashScope(type, scope) {
+  dash[type].scope = scope;
+  renderDash(type);
+}
+
 // Delete (event delegation)
 $("list").addEventListener("click", (e) => {
   const btn = e.target.closest(".item-del");
@@ -511,6 +646,23 @@ $("cancelBtn").addEventListener("click", closeSheet);
 $("sheet").addEventListener("click", (e) => { if (e.target === $("sheet")) closeSheet(); });
 $("prevMonth").addEventListener("click", () => changeMonth(-1));
 $("nextMonth").addEventListener("click", () => changeMonth(1));
+
+// Bottom tab bar
+document.querySelectorAll(".tabbar button").forEach((b) =>
+  b.addEventListener("click", () => switchTab(b.dataset.tab)));
+
+// Dashboard scope toggles (Month / Year) + period navigation
+document.querySelectorAll(".scope-toggle").forEach((tog) => {
+  const type = tog.dataset.dash;
+  tog.querySelectorAll("button").forEach((b) =>
+    b.addEventListener("click", () => setDashScope(type, b.dataset.scope)));
+});
+["expense", "income"].forEach((type) => {
+  document.querySelector(`[data-nav="${type}-prev"]`)
+    .addEventListener("click", () => changeDashPeriod(type, -1));
+  document.querySelector(`[data-nav="${type}-next"]`)
+    .addEventListener("click", () => changeDashPeriod(type, 1));
+});
 
 $("expenseForm").addEventListener("submit", async (e) => {
   e.preventDefault();
