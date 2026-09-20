@@ -15,6 +15,28 @@
     <p class="muted">Connecting…</p>
   </div>
 
+  <!-- Login (email + password) -->
+  <div id="authScreen" class="screen center hidden">
+    <div class="pin-box">
+      <div class="logo">💰</div>
+      <h1 id="authTitle">Sign in</h1>
+      <p id="authSub" class="muted">Sign in to see your expenses on any device</p>
+      <form id="authForm" class="auth-form" novalidate>
+        <input id="email" type="email" inputmode="email" autocomplete="username"
+               placeholder="Email" required />
+        <input id="password" type="password" autocomplete="current-password"
+               placeholder="Password" required minlength="6" />
+        <p id="authError" class="error hidden"></p>
+        <button type="submit" class="btn primary" id="authSubmit">Sign in</button>
+      </form>
+      <button type="button" id="forgotBtn" class="linkbtn">Forgot password?</button>
+      <p class="auth-toggle muted small">
+        <span id="toggleText">New here?</span>
+        <button type="button" id="toggleMode" class="linkbtn">Create an account</button>
+      </p>
+    </div>
+  </div>
+
   <!-- PIN gate -->
   <div id="pinScreen" class="screen center hidden">
     <div class="pin-box">
@@ -39,6 +61,7 @@
         <button data-key="0">0</button>
         <button class="ghost" data-key="back">⌫</button>
       </div>
+      <button type="button" id="signOutBtn" class="linkbtn muted">Sign out</button>
     </div>
   </div>
 
@@ -113,6 +136,6 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=2"></script>
+  <script type="module" src="app.js?v=3"></script>
 </body>
 </html>

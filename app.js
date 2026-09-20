@@ -3,8 +3,9 @@
 // ---------------------------------------------------------------------------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, signInAnonymously, onAuthStateChanged, setPersistence,
-  browserLocalPersistence
+  getAuth, onAuthStateChanged, setPersistence, browserLocalPersistence,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  sendPasswordResetEmail, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, deleteDoc, doc, query, orderBy,
@@ -30,9 +31,11 @@ const METHODS = ["Cash", "UPI", "Card"];
 // ---- Elements ----
 const $ = (id) => document.getElementById(id);
 const loadingEl = $("loading");
+const authScreen = $("authScreen");
 const pinScreen = $("pinScreen");
 const appEl = $("app");
 
+let auth = null;
 let db, uid = null;
 let expenses = [];       // cached list
 let unsubscribe = null;
@@ -48,18 +51,27 @@ function initFirebase() {
     return;
   }
   const appFb = initializeApp(firebaseConfig);
-  const auth = getAuth(appFb);
+  auth = getAuth(appFb);
   db = getFirestore(appFb);
 
-  setPersistence(auth, browserLocalPersistence)
-    .then(() => signInAnonymously(auth))
-    .catch((e) => showError(e));
+  // Keep the user signed in on this device across app opens/reloads.
+  setPersistence(auth, browserLocalPersistence).catch((e) => console.warn(e));
 
   onAuthStateChanged(auth, (user) => {
     if (user) {
       uid = user.uid;
       subscribeExpenses();
+      loadingEl.classList.add("hidden");
+      authScreen.classList.add("hidden");
       showPinGate();
+    } else {
+      // Not signed in on this device — show the login screen.
+      uid = null;
+      if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+      loadingEl.classList.add("hidden");
+      pinScreen.classList.add("hidden");
+      appEl.classList.add("hidden");
+      showAuthScreen();
     }
   });
 }
@@ -98,6 +110,102 @@ function showError(e) {
     '<div class="pin-box"><div class="logo">⚠️</div><h1>Something went wrong</h1>' +
     '<p class="muted">' + (e && e.message ? e.message : e) + '</p></div>';
 }
+
+// ============================ EMAIL/PASSWORD AUTH ===========================
+let authMode = "signin"; // "signin" | "signup"
+
+function showAuthScreen() {
+  applyAuthMode();
+  $("authError").classList.add("hidden");
+  authScreen.classList.remove("hidden");
+}
+
+function applyAuthMode() {
+  const signup = authMode === "signup";
+  $("authTitle").textContent = signup ? "Create account" : "Sign in";
+  $("authSub").textContent = signup
+    ? "Create an account to sync across your devices"
+    : "Sign in to see your expenses on any device";
+  $("authSubmit").textContent = signup ? "Create account" : "Sign in";
+  $("password").setAttribute("autocomplete", signup ? "new-password" : "current-password");
+  $("toggleText").textContent = signup ? "Already have an account?" : "New here?";
+  $("toggleMode").textContent = signup ? "Sign in" : "Create an account";
+  $("forgotBtn").classList.toggle("hidden", signup);
+}
+
+function friendlyAuthError(code, message) {
+  const map = {
+    "auth/invalid-email": "That doesn't look like a valid email address.",
+    "auth/missing-password": "Please enter your password.",
+    "auth/weak-password": "Password must be at least 6 characters.",
+    "auth/email-already-in-use": "That email already has an account — try signing in instead.",
+    "auth/invalid-credential": "Wrong email or password.",
+    "auth/wrong-password": "Wrong email or password.",
+    "auth/user-not-found": "No account with that email — create one below.",
+    "auth/too-many-requests": "Too many attempts. Please wait a minute and try again.",
+    "auth/network-request-failed": "No internet connection. Check your network and try again.",
+  };
+  return map[code] || message || "Something went wrong. Please try again.";
+}
+
+$("authForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  const errEl = $("authError");
+  errEl.classList.add("hidden");
+  const btn = $("authSubmit");
+  btn.disabled = true;
+  const label = btn.textContent;
+  btn.textContent = "Please wait…";
+  try {
+    if (authMode === "signup") {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+    }
+    // onAuthStateChanged takes over from here.
+  } catch (err) {
+    errEl.textContent = friendlyAuthError(err.code, err.message);
+    errEl.classList.remove("hidden");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+});
+
+$("toggleMode").addEventListener("click", () => {
+  authMode = authMode === "signin" ? "signup" : "signin";
+  applyAuthMode();
+  $("authError").classList.add("hidden");
+});
+
+$("forgotBtn").addEventListener("click", async () => {
+  const email = $("email").value.trim();
+  const errEl = $("authError");
+  if (!email) {
+    errEl.textContent = "Type your email above first, then tap “Forgot password?”.";
+    errEl.classList.remove("hidden");
+    return;
+  }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    errEl.style.color = "var(--primary)";
+    errEl.textContent = "Password reset email sent. Check your inbox.";
+    errEl.classList.remove("hidden");
+  } catch (err) {
+    errEl.style.color = "";
+    errEl.textContent = friendlyAuthError(err.code, err.message);
+    errEl.classList.remove("hidden");
+  }
+});
+
+async function doSignOut() {
+  try { await signOut(auth); } catch (e) { console.warn(e); }
+}
+$("signOutBtn").addEventListener("click", () => {
+  if (confirm("Sign out of this account on this device?")) doSignOut();
+});
 
 // ================================ PIN GATE ==================================
 const PIN_KEY = "expense_pin";
