@@ -23,8 +23,15 @@ delete flow was tested end-to-end against the live database.
    email + a password (at least 6 characters), and tap **Create account**. Use the
    *same* email + password on any other device to see the same expenses.
 4. She then sets a **4-digit PIN** for quick daily unlocking on that device.
-5. Tap the **+** button to add an expense (amount, category, payment method,
-   date, note). Totals and the category breakdown update automatically.
+5. Tap the **+** button to add an entry. Use the **Expense / Income** toggle at
+   the top to record either. The balance sheet and remaining balance update
+   automatically. Use the ‹ › arrows to look back at previous months.
+
+**Tip on the running balance:** it carries forward automatically — each month
+starts from the previous month's remaining balance, so "Remaining balance"
+always reflects real money left, not just this month's activity. For the very
+first month, add an income entry for whatever money she already has on hand (or
+an "Other" income = her starting balance) so the running total begins correctly.
 
 **Everyday use:** she just opens the app and enters her PIN — she stays signed in.
 The email + password is only needed the first time on each new device.
@@ -34,10 +41,14 @@ The email + password is only needed the first time on each new device.
 
 ## Features
 
-- Add expenses: amount, category, payment method, date, note
-- Today's total + this month's total
-- This-month breakdown by category
-- Recent expenses list with delete
+- Track **both income and expenses** — tap **+**, then choose Expense or Income
+  - Expense: amount, category, payment method, date, note
+  - Income: amount, source (Salary, Business, Interest, …), date, note
+- **Monthly balance sheet:** Opening balance (carried from the previous month)
+  ＋ Income − Expenses (broken down by category/source) = **Remaining balance**
+- **Running balance** headline — how much money is left, as of today
+- **Month navigator** (‹ ›) to view any past month's balance sheet
+- Transactions list for the month, with delete
 - **Email + password login** — same account syncs across all her devices
 - Password reset by email
 - 4-digit PIN lock for quick daily unlocking on each device
