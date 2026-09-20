@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f766e" />
+  <title>Expense Tracker</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Loading -->
+  <div id="loading" class="screen center">
+    <div class="spinner"></div>
+    <p class="muted">Connecting…</p>
+  </div>
+
+  <!-- PIN gate -->
+  <div id="pinScreen" class="screen center hidden">
+    <div class="pin-box">
+      <div class="logo">💰</div>
+      <h1 id="pinTitle">Enter PIN</h1>
+      <p id="pinHint" class="muted">Enter your 4-digit PIN</p>
+      <div class="pin-dots" id="pinDots">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <p id="pinError" class="error hidden">Wrong PIN, try again</p>
+      <div class="keypad">
+        <button data-key="1">1</button>
+        <button data-key="2">2</button>
+        <button data-key="3">3</button>
+        <button data-key="4">4</button>
+        <button data-key="5">5</button>
+        <button data-key="6">6</button>
+        <button data-key="7">7</button>
+        <button data-key="8">8</button>
+        <button data-key="9">9</button>
+        <button class="ghost" data-key="clear">✕</button>
+        <button data-key="0">0</button>
+        <button class="ghost" data-key="back">⌫</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main app -->
+  <div id="app" class="hidden">
+    <header class="topbar">
+      <div>
+        <div class="app-title">Expenses</div>
+        <div class="muted small" id="todayLabel"></div>
+      </div>
+      <button id="lockBtn" class="icon-btn" title="Lock">🔒</button>
+    </header>
+
+    <section class="totals">
+      <div class="total-card">
+        <div class="muted small">Today</div>
+        <div class="total-amount" id="todayTotal">₹0</div>
+      </div>
+      <div class="total-card accent">
+        <div class="muted small">This month</div>
+        <div class="total-amount" id="monthTotal">₹0</div>
+      </div>
+    </section>
+
+    <section class="card" id="breakdownCard">
+      <div class="card-head">
+        <h2>This month by category</h2>
+      </div>
+      <div id="breakdown" class="breakdown">
+        <p class="muted small">No expenses yet this month.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Recent</h2>
+      </div>
+      <ul id="list" class="list">
+        <li class="muted small empty">No expenses yet. Tap + to add one.</li>
+      </ul>
+    </section>
+
+    <button id="fab" class="fab" aria-label="Add expense">+</button>
+  </div>
+
+  <!-- Add expense sheet -->
+  <div id="sheet" class="sheet-overlay hidden">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h2>Add expense</h2>
+      <form id="expenseForm">
+        <label>Amount (₹)</label>
+        <input id="amount" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required />
+
+        <label>Category</label>
+        <div class="chips" id="categoryChips"></div>
+
+        <label>Payment method</label>
+        <div class="chips" id="methodChips"></div>
+
+        <label>Date</label>
+        <input id="date" type="date" required />
+
+        <label>Note (optional)</label>
+        <input id="note" type="text" maxlength="80" placeholder="e.g. Vegetables from market" />
+
+        <div class="sheet-actions">
+          <button type="button" id="cancelBtn" class="btn ghost">Cancel</button>
+          <button type="submit" class="btn primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

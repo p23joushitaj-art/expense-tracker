@@ -1,0 +1,15 @@
+rules_version = '2';
+
+// Paste these rules into the Firebase Console:
+//   Firestore Database -> Rules -> replace everything -> Publish.
+//
+// Each anonymous user can only read/write documents under their OWN uid.
+// Nobody can read anyone else's data, even though the app config is public.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+  }
+}
