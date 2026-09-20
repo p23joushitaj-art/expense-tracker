@@ -19,9 +19,18 @@ delete flow was tested end-to-end against the live database.
 
 1. Open **https://p23joushitaj-art.github.io/expense-tracker/** in her phone's browser.
 2. Browser menu → **Add to Home Screen**. It now opens like a normal app.
-3. First open: she picks a **4-digit PIN**. After that, the PIN unlocks the app.
-4. Tap the **+** button to add an expense (amount, category, payment method,
+3. **First time only:** create the account — tap **Create an account**, enter an
+   email + a password (at least 6 characters), and tap **Create account**. Use the
+   *same* email + password on any other device to see the same expenses.
+4. She then sets a **4-digit PIN** for quick daily unlocking on that device.
+5. Tap the **+** button to add an expense (amount, category, payment method,
    date, note). Totals and the category breakdown update automatically.
+
+**Everyday use:** she just opens the app and enters her PIN — she stays signed in.
+The email + password is only needed the first time on each new device.
+
+**Forgot the password?** On the sign-in screen, type the email and tap
+**Forgot password?** — Firebase emails a reset link.
 
 ## Features
 
@@ -29,17 +38,17 @@ delete flow was tested end-to-end against the live database.
 - Today's total + this month's total
 - This-month breakdown by category
 - Recent expenses list with delete
-- 4-digit PIN lock over anonymous Firebase sign-in
+- **Email + password login** — same account syncs across all her devices
+- Password reset by email
+- 4-digit PIN lock for quick daily unlocking on each device
 
 ## Good to know
 
-- **The data is tied to the browser on her phone.** Sign-in is anonymous, so the
-  expenses live with that one browser. If she clears the browser's site data,
-  switches phones, or uses a different browser, that instance starts empty. For a
-  single daily-use phone this is fine. (To make data follow her across devices,
-  switch to email/password login — ask and it can be changed.)
-- **The PIN** is a convenience lock on her phone, not bank-grade security. The
-  real protection for the data is the Firestore rules + anonymous auth.
+- **Cross-device sync:** because she signs in with email + password, the same
+  account shows the same expenses on any phone, tablet, or computer. Sign in once
+  per device; the session then stays active.
+- **The PIN** is a quick per-device lock on top of the login, not bank-grade
+  security. The real protection for the data is the Firestore rules + login.
 - **The Firebase config in `firebase-config.js` is safe to be public** — the data
   is protected by the security rules in `firestore.rules`, not by hiding the config.
 - **Cost:** comfortably within Firebase's free (Spark) plan for one person.
