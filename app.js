@@ -349,8 +349,8 @@ function render() {
   const isCredit = (t) => isExpense(t) && t.method === CREDIT_METHOD;
   const countsForBalance = (t) => !(isCredit(t) && !includeCredit);
 
-  let opening = 0, incomeThis = 0, expenseThis = 0, creditThis = 0;
-  const byCatExpense = {}, byCatIncome = {};
+  let opening = 0, incomeThis = 0, expenseThis = 0;
+  const byCatIncome = {}, byNonCreditExp = {}, byCreditExp = {};
 
   for (const t of expenses) {
     const amt = Number(t.amount) || 0;
@@ -360,10 +360,12 @@ function render() {
       if (countsForBalance(t)) opening += isExpense(t) ? -amt : amt;
     } else if (t.date.slice(0, 7) === MK) {
       if (isExpense(t)) {
-        if (isCredit(t)) creditThis += amt;
-        if (countsForBalance(t)) {
+        if (isCredit(t)) {
+          byCreditExp[t.category] = (byCreditExp[t.category] || 0) + amt;
+          if (includeCredit) expenseThis += amt;   // only counts when toggle on
+        } else {
+          byNonCreditExp[t.category] = (byNonCreditExp[t.category] || 0) + amt;
           expenseThis += amt;
-          byCatExpense[t.category] = (byCatExpense[t.category] || 0) + amt;
         }
       } else {
         incomeThis += amt;
@@ -374,14 +376,7 @@ function render() {
   const remaining = opening + incomeThis - expenseThis;
   const signed = (n) => (n < 0 ? "−" : "") + fmt(n);
 
-  // Reflect toggle state + credit memo line
   $("includeCredit").checked = includeCredit;
-  const showMemo = !includeCredit && creditThis > 0;
-  $("creditMemo").classList.toggle("hidden", !showMemo);
-  if (showMemo) {
-    $("creditMemoLabel").textContent = "On credit card this month (not deducted)";
-    $("creditMemoAmt").textContent = fmt(creditThis);
-  }
 
   // Header + month navigator
   $("todayLabel").textContent = new Date().toLocaleDateString(LOCALE, {
@@ -412,9 +407,7 @@ function render() {
   $("incomeBreakdown").innerHTML =
     subrows(byCatIncome, "income") ||
     '<div class="subrow muted small">No income this month.</div>';
-  $("breakdown").innerHTML =
-    subrows(byCatExpense, "expense") ||
-    '<div class="subrow muted small">No expenses this month.</div>';
+  $("breakdown").innerHTML = expenseBreakdownHtml(byNonCreditExp, byCreditExp, includeCredit);
 
   // Transactions for the viewed month (already newest-first from the query)
   const monthTx = expenses.filter((t) => t.date && t.date.slice(0, 7) === MK);
@@ -439,6 +432,33 @@ function render() {
         <div class="item-amount ${income ? "income" : ""}">${income ? "+" : "−"}${fmt(t.amount)}</div>
         <button class="item-del" data-id="${t.id}" title="Delete">🗑️</button>
       </li>`;
+  }).join("");
+}
+
+// Balance-sheet expense breakdown: each category split into the amount that was
+// deducted (cash/UPI/debit) and the amount still on credit card (not deducted,
+// unless the "include credit" toggle is on, in which case it's shown combined).
+function expenseBreakdownHtml(byNC, byCR, includeCredit) {
+  const names = new Set([...Object.keys(byNC), ...Object.keys(byCR)]);
+  if (!names.size) return '<div class="subrow muted small">No expenses this month.</div>';
+  const arr = [...names].map((n) => ({ n, nc: byNC[n] || 0, cr: byCR[n] || 0 }));
+  arr.sort((a, b) => (b.nc + b.cr) - (a.nc + a.cr));
+  return arr.map(({ n, nc, cr }) => {
+    const label = `${emojiFor(n, "expense")} ${escapeHtml(n)}`;
+    if (includeCredit) {
+      return `<div class="subrow"><span>${label}</span><span>${fmt(nc + cr)}</span></div>`;
+    }
+    if (nc > 0) {
+      let html = `<div class="subrow"><span>${label}</span><span>${fmt(nc)}</span></div>`;
+      if (cr > 0) {
+        html += `<div class="subrow credit"><span>💳 on credit (not deducted)</span>` +
+                `<span>${fmt(cr)}</span></div>`;
+      }
+      return html;
+    }
+    // Category with only credit-card spend this month.
+    return `<div class="subrow"><span>${label} <span class="muted small">· on credit</span></span>` +
+           `<span class="muted">${fmt(cr)}</span></div>`;
   }).join("");
 }
 
