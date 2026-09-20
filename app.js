@@ -349,7 +349,7 @@ function render() {
   const isCredit = (t) => isExpense(t) && t.method === CREDIT_METHOD;
   const countsForBalance = (t) => !(isCredit(t) && !includeCredit);
 
-  let opening = 0, incomeThis = 0, expenseThis = 0;
+  let opening = 0, incomeThis = 0, nonCreditThis = 0, creditThis = 0;
   const byCatIncome = {}, byNonCreditExp = {}, byCreditExp = {};
 
   for (const t of expenses) {
@@ -361,11 +361,11 @@ function render() {
     } else if (t.date.slice(0, 7) === MK) {
       if (isExpense(t)) {
         if (isCredit(t)) {
+          creditThis += amt;
           byCreditExp[t.category] = (byCreditExp[t.category] || 0) + amt;
-          if (includeCredit) expenseThis += amt;   // only counts when toggle on
         } else {
+          nonCreditThis += amt;
           byNonCreditExp[t.category] = (byNonCreditExp[t.category] || 0) + amt;
-          expenseThis += amt;
         }
       } else {
         incomeThis += amt;
@@ -373,10 +373,17 @@ function render() {
       }
     }
   }
-  const remaining = opening + incomeThis - expenseThis;
+  const fullExpense = nonCreditThis + creditThis;      // shown as the Expenses line
+  const deducted = nonCreditThis + (includeCredit ? creditThis : 0);
+  const remaining = opening + incomeThis - deducted;
   const signed = (n) => (n < 0 ? "−" : "") + fmt(n);
 
   $("includeCredit").checked = includeCredit;
+
+  // Add-back line: credit spend isn't deducted unless the toggle is on.
+  const addBack = includeCredit ? 0 : creditThis;
+  $("creditAddback").classList.toggle("hidden", addBack <= 0);
+  $("creditAddbackAmt").textContent = "+" + fmt(addBack);
 
   // Header + month navigator
   $("todayLabel").textContent = new Date().toLocaleDateString(LOCALE, {
@@ -400,14 +407,14 @@ function render() {
   $("openingNote").textContent =
     "carried from " + prev.toLocaleDateString(LOCALE, { month: "long" });
   $("incomeTotal").textContent = "+" + fmt(incomeThis);
-  $("expenseTotal").textContent = "−" + fmt(expenseThis);
+  $("expenseTotal").textContent = "−" + fmt(fullExpense);
   $("remainingRow").textContent = signed(remaining);
   $("remainingRow").classList.toggle("negative", remaining < 0);
 
   $("incomeBreakdown").innerHTML =
     subrows(byCatIncome, "income") ||
     '<div class="subrow muted small">No income this month.</div>';
-  $("breakdown").innerHTML = expenseBreakdownHtml(byNonCreditExp, byCreditExp, includeCredit);
+  $("breakdown").innerHTML = expenseBreakdownHtml(byNonCreditExp, byCreditExp);
 
   // Transactions for the viewed month (already newest-first from the query)
   const monthTx = expenses.filter((t) => t.date && t.date.slice(0, 7) === MK);
@@ -435,30 +442,23 @@ function render() {
   }).join("");
 }
 
-// Balance-sheet expense breakdown: each category split into the amount that was
-// deducted (cash/UPI/debit) and the amount still on credit card (not deducted,
-// unless the "include credit" toggle is on, in which case it's shown combined).
-function expenseBreakdownHtml(byNC, byCR, includeCredit) {
+// Balance-sheet expense breakdown: each category shows its total, and — when the
+// category involves credit-card spend — indented "Non-credit card" and
+// "Credit card" sub-amounts.
+function expenseBreakdownHtml(byNC, byCR) {
   const names = new Set([...Object.keys(byNC), ...Object.keys(byCR)]);
   if (!names.size) return '<div class="subrow muted small">No expenses this month.</div>';
   const arr = [...names].map((n) => ({ n, nc: byNC[n] || 0, cr: byCR[n] || 0 }));
   arr.sort((a, b) => (b.nc + b.cr) - (a.nc + a.cr));
   return arr.map(({ n, nc, cr }) => {
-    const label = `${emojiFor(n, "expense")} ${escapeHtml(n)}`;
-    if (includeCredit) {
-      return `<div class="subrow"><span>${label}</span><span>${fmt(nc + cr)}</span></div>`;
+    const head = `<div class="subrow cat-head"><span>${emojiFor(n, "expense")} ${escapeHtml(n)}</span>` +
+                 `<span>${fmt(nc + cr)}</span></div>`;
+    if (cr > 0) {
+      return head +
+        `<div class="subrow sub2"><span>Non-credit card</span><span>${fmt(nc)}</span></div>` +
+        `<div class="subrow sub2"><span>💳 Credit card</span><span>${fmt(cr)}</span></div>`;
     }
-    if (nc > 0) {
-      let html = `<div class="subrow"><span>${label}</span><span>${fmt(nc)}</span></div>`;
-      if (cr > 0) {
-        html += `<div class="subrow credit"><span>💳 on credit (not deducted)</span>` +
-                `<span>${fmt(cr)}</span></div>`;
-      }
-      return html;
-    }
-    // Category with only credit-card spend this month.
-    return `<div class="subrow"><span>${label} <span class="muted small">· on credit</span></span>` +
-           `<span class="muted">${fmt(cr)}</span></div>`;
+    return head;   // no credit-card spend in this category — single line
   }).join("");
 }
 

@@ -230,7 +230,11 @@ form input:focus { outline: 2px solid var(--primary); background: #fff; }
 #remainingBalance.negative, #remainingRow.negative { color: var(--danger); }
 .subrows { display: flex; flex-direction: column; gap: 6px; padding: 2px 0 8px 10px; }
 .subrow { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); }
-.subrow.credit { padding-left: 18px; font-size: 13px; opacity: .85; }
+.subrow.cat-head { color: var(--text); font-weight: 500; margin-top: 4px; }
+.subrow.cat-head:first-child { margin-top: 0; }
+.subrow.sub2 { padding-left: 18px; font-size: 13px; }
+.sr.addback { color: var(--income); font-size: 14px; padding: 8px 0; }
+.sr.addback span:last-child { color: var(--income); }
 
 /* Income amount in transaction list */
 .item-amount.income { color: var(--income); }
